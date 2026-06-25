@@ -6,12 +6,30 @@ My dotfiles managed with GNU Stow.
 
 ```
 dotfiles/
-├── bash/          -> ~/.bashrc
-├── vim/           -> ~/.vimrc
-├── nvim/          -> ~/.config/nvim/
-├── ghostty/       -> ~/.config/ghostty/
-├── starship/      -> ~/.config/starship/
-└── ferrix/        -> ~/.config/ferrix/
+├── bash/
+│   ├── .bashrc
+│   └── .bash_profile
+├── vim/
+│   └── .vimrc
+├── nvim/
+│   └── .config/nvim/
+│       ├── init.lua
+│       ├── .stylua.toml
+│       └── lua/
+│           ├── options.lua
+│           ├── mappings.lua
+│           ├── autocmds.lua
+│           ├── chadrc.lua
+│           ├── configs/
+│           └── plugins/
+├── ghostty/
+│   └── .config/ghostty/config
+├── starship/
+│   └── .config/starship.toml
+├── ferrix/
+│   └── .config/ferrix/config
+├── install.sh
+└── README.md
 ```
 
 ## Tools
@@ -20,12 +38,13 @@ dotfiles/
 - **vim** - Vim (minimal config)
 - **ghostty** - Terminal emulator
 - **starship** - Cross-shell prompt
-- **ferrix** - Tmux alternative
-- **bash** - Shell config
+- **ferrix** - Tmux alternative (manual install)
+- **bash** - Shell config (.bashrc, .bash_profile)
 
 ## Installation
 
 ```bash
+cd ~/Documents/projects/dotfiles
 ./install.sh
 ```
 
@@ -33,6 +52,20 @@ The install script will:
 1. Detect your package manager (apt, dnf, apk, pacman, brew, zypper)
 2. Install any missing tools automatically
 3. Stow all dotfiles to your home directory
+
+## Manual Setup
+
+If you already have dotfiles in ~, you may need to remove or backup them first:
+
+```bash
+# Backup existing configs
+mkdir -p ~/dotfiles-backup
+mv ~/.bashrc ~/dotfiles-backup/ 2>/dev/null || true
+# ... repeat for other files
+
+# Then run install
+./install.sh
+```
 
 ## Manual Stow
 
@@ -54,10 +87,11 @@ stow -v -t ~ nvim
 - Vim (optional)
 - Ghostty (optional)
 - Starship (optional)
-- Ferrix (optional)
+- Ferrix (manual install required)
 
 ## Notes
 
-- Ferrix is a tmux alternative
+- Ferrix is a tmux alternative - install manually
 - Uses NvChad v2.5 for Neovim
 - Ghostty theme with VT323 font
+- Starship with custom two-line prompt design

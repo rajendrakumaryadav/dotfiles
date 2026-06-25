@@ -1,8 +1,29 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$DOTFILES_DIR"
+STOW_PARENT="$(dirname "$DOTFILES_DIR")"
+STOW_DIR_NAME="$(basename "$DOTFILES_DIR")"
+
+RED='\033[0;31m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+BLUE='\033[34m'
+NC='\033[0m'
+
+log() { echo -e "${BLUE}[*]${NC} $1"; }
+success() { echo -e "${GREEN}[+]${NC} $1"; }
+warn() { echo -e "${YELLOW}[!]${NC} $1"; }
+error() { echo -e "${RED}[x]${NC} $1"; }
+
+PACKAGES=(
+    "bash:bash:"
+    "vim:vim:"
+    "nvim:neovim:"
+    "ghostty:ghostty:"
+    "starship:starship:"
+    "ferrix:ferrix:manual"
+)
 
 detect_package_manager() {
     if command -v apt-get &>/dev/null; then
@@ -24,11 +45,13 @@ detect_package_manager() {
 
 install_package() {
     local pkg="$1"
-    local pm=$(detect_package_manager)
+    local pm
+    pm=$(detect_package_manager)
 
     case "$pm" in
         apt)
-            sudo apt-get update && sudo apt-get install -y "$pkg"
+            sudo apt-get update
+            sudo apt-get install -y "$pkg"
             ;;
         dnf)
             sudo dnf install -y "$pkg"
@@ -46,7 +69,7 @@ install_package() {
             sudo zypper install -y "$pkg"
             ;;
         *)
-            echo "Cannot install $pkg: unknown package manager ($pm)"
+            error "Unknown package manager ($pm). Cannot install $pkg."
             return 1
             ;;
     esac
@@ -58,49 +81,83 @@ is_installed() {
 
 check_and_install() {
     local tool="$1"
-    local package="${2:-$tool}"
+    local package="$2"
+    local mode="${3:-auto}"
+
+    if [ "$mode" = "manual" ]; then
+        if is_installed "$tool"; then
+            success "$tool is already installed"
+        else
+            warn "$tool not found. Please install it manually."
+        fi
+        return 0
+    fi
 
     if is_installed "$tool"; then
-        echo "[SKIP] $tool is already installed"
+        success "$tool is already installed"
     else
-        echo "[INSTALL] $tool not found, installing..."
-        install_package "$package"
+        warn "$tool not found, attempting to install $package..."
+        if install_package "$package"; then
+            success "$tool installed successfully"
+        else
+            warn "Failed to install $tool automatically. Please install it manually."
+        fi
     fi
 }
 
+stow_package() {
+    local pkg="$1"
+    local pkg_dir="$DOTFILES_DIR/$pkg"
+
+    if [ ! -d "$pkg_dir" ]; then
+        warn "Package directory not found: $pkg"
+        return 0
+    fi
+
+    if [ -z "$(ls -A "$pkg_dir" 2>/dev/null)" ]; then
+        warn "Skipping $pkg (empty directory)"
+        return 0
+    fi
+
+    log "Stowing $pkg..."
+    cd "$STOW_PARENT"
+
+    if stow -v -t "$HOME" -d "$STOW_DIR_NAME" --restow "$pkg"; then
+        success "Stowed $pkg"
+    else
+        error "Failed to stow $pkg. Existing files may conflict."
+        warn "Run with --adopt flag or manually backup conflicting files."
+    fi
+}
+
+echo ""
 echo "=== Dotfiles Installer ==="
 echo ""
 
-echo "Detecting package manager..."
+log "Detecting package manager..."
 PM=$(detect_package_manager)
-echo "Using: $PM"
+log "Using: $PM"
 echo ""
 
-echo "=== Checking required tools ==="
+log "Checking required tools..."
 
-check_and_install stow stow
-check_and_install nvim neovim
-check_and_install vim vim
-check_and_install ghostty ghostty
-check_and_install starship starship
-check_and_install ferrix
+check_and_install stow stow auto
 
-echo ""
-echo "=== Stowing dotfiles ==="
-
-STOW_PARENT="$(dirname "$DOTFILES_DIR")"
-cd "$STOW_PARENT"
-
-for pkg in bash vim nvim ghostty starship ferrix; do
-    if [ -d "$DOTFILES_DIR/$pkg" ] && [ "$(ls -A "$DOTFILES_DIR/$pkg" 2>/dev/null)" ]; then
-        echo "[STOW] $pkg"
-        stow -v -t "$HOME" -d dotfiles "$pkg"
-    else
-        echo "[SKIP] $pkg (no files)"
-    fi
+for entry in "${PACKAGES[@]}"; do
+    IFS=':' read -r tool package mode <<< "$entry"
+    check_and_install "$tool" "$package" "$mode"
 done
 
 echo ""
-echo "=== Done ==="
+log "Stowing dotfiles..."
 echo ""
-echo "Restart your shell or run: source ~/.bashrc"
+
+for entry in "${PACKAGES[@]}"; do
+    IFS=':' read -r tool package mode <<< "$entry"
+    stow_package "$tool"
+done
+
+echo ""
+success "=== Done ==="
+echo ""
+log "Restart your shell or run: source ~/.bashrc"
