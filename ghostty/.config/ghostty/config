@@ -1,0 +1,19 @@
+font-family = VT323
+font-size = 20
+font-feature = calt, liga
+font-family-bold = VT323
+
+cursor-style = bar
+window-theme = ghostty
+background-opacity = 0.90
+background-blur = true
+
+window-decoration = auto
+
+shell-integration = bash
+
+adw-toolbar-style = raised
+gtk-wide-tabs = true
+
+copy-on-select = true
+macos-titlebar-style=transparent

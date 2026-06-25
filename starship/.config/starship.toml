@@ -1,0 +1,124 @@
+# ~/.config/starship.toml
+# A clean, minimal, and informative two-line prompt.
+# Based on the user's request for the "╭─ / ╰─" style.
+
+# Get editor completions based on the schema
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# --- Global Settings ---
+# Inserts a blank line between shell prompts for better readability.
+add_newline = true
+# Timeout for commands to be considered "long-running" (in ms)
+command_timeout = 1000
+
+# Use a two-line prompt layout with custom separators
+# This is the core of the new design.
+format = """
+[╭─](color_grey)$directory$git_branch$git_status$package$nodejs$rust$golang$python
+[╰─](color_grey)$character"""
+
+# Add modules to the right side of the first prompt line.
+right_format = "$memory_usage$time"
+
+# Define a custom color palette for the grey separators to make them less prominent.
+[palettes.custom]
+color_grey = '#4c566a' # A muted, dark grey.
+
+# --- Module Configuration ---
+
+# The prompt character at the start of the second line.
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold green)"
+
+# Current directory configuration.
+[directory]
+style = "bold cyan"
+truncation_length = 4
+truncate_to_repo = true # Shortens path to the repository root.
+read_only = " 🔒"
+read_only_style = "red"
+# You can keep your substitutions here if you like them!
+[directory.substitutions]
+"~" = "🏠"
+"Documents" = "📄"
+"Downloads" = "📥"
+"Music" = "🎵"
+"Pictures" = "🖼"
+
+# Git branch configuration.
+[git_branch]
+symbol = "" # Nerd Font: nf-custom-git
+style = "bold purple"
+format = " on [$symbol $branch]($style)" # The "on" provides context.
+
+# Git status configuration.
+[git_status]
+style = "bold red"
+conflicted = "⚔️ "
+ahead = "🔼 "
+behind = "🔽 "
+diverged = "🔄 "
+untracked = "? "
+stashed = "📦 "
+modified = "! "
+staged = "✓ "
+renamed = "» "
+deleted = "✘ "
+# The format joins all status symbols together.
+format = "[$all_status$ahead_behind]($style)"
+
+# --- Language & Tooling Modules ---
+
+# Generic package version (e.g., from Cargo.toml or package.json).
+[package]
+symbol = "📦 "
+style = "bold 208" # An orange-like color.
+display_private = false
+format = "is [$symbol$version]($style) " # The "is" provides context.
+
+# Docker context.
+[docker_context]
+symbol = "🐳 "
+style = "bold blue"
+format = "via [$symbol$context]($style) "
+
+# Golang version.
+[golang]
+symbol = " " # Nerd Font: nf-dev-go
+style = "bold cyan"
+format = "via [$symbol($version)]($style) " # The "via" provides context.
+
+# Node.js version.
+[nodejs]
+symbol = " " # Nerd Font: nf-dev-nodejs_small
+style = "bold green"
+format = "via [$symbol($version)]($style) "
+
+# Python version.
+[python]
+symbol = "🐍 "
+style = "bold yellow"
+format = "via [$symbol($version)]($style) "
+pyenv_version_name = true
+
+# Rust version.
+[rust]
+symbol = "🦀 "
+style = "bold 208" # An orange-like color.
+format = "via [$symbol($version)]($style) "
+
+# --- System Information Modules (for the right prompt) ---
+
+[memory_usage]
+disabled = false
+style = "bold cyan"
+format = " [󰾅 $ram]($style)" # Nerd Font: nf-md-memory
+symbol = "" # We use an icon in the format string
+
+[time]
+disabled = false
+style = "bold magenta"
+time_format = "%R" # 24-hour format like 13:37
+format = " [󱑍 $time]($style)" # Nerd Font: nf-md-clock_time_four_outline
