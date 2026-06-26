@@ -31,7 +31,7 @@ o.redrawtime = 1500
 o.completeopt = "menu,menuone,noselect"
 o.shortmess = "c"
 o.whichwrap = "<>[]hl"
-o.iskeyword:append("-")
+vim.opt.iskeyword:append("-")
 
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
