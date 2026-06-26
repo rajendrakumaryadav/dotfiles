@@ -1,6 +1,8 @@
 local options = {
   formatters_by_ft = {
     lua = { "stylua" },
+    rust = { "rustfmt", "trim_whitespace", "injected" },
+    zig = { "zig_fmt" },
     -- css = { "prettier" },
     -- html = { "prettier" },
   },

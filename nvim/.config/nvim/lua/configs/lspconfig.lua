@@ -40,4 +40,21 @@ vim.lsp.config["gopls"] = {
   capabilities = capabilities,
 }
 
-vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "html", "cssls", "gopls" })
+vim.lsp.config["rust_analyzer"] = {
+  on_attach = on_attach,
+  capabilities = capabilities,
+  settings = {
+    ["rust-analyzer"] = {
+      checkOnSave = {
+        command = "clippy",
+      },
+    },
+  },
+}
+
+vim.lsp.config["zls"] = {
+  on_attach = on_attach,
+  capabilities = capabilities,
+}
+
+vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "html", "cssls", "gopls", "rust_analyzer", "zls" })
