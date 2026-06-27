@@ -1,0 +1,245 @@
+// ---------------------------------------------------------------------------
+// Zellij configuration (KDL)
+// Spec: https://zellij.dev/documentation/configuration
+// Built-in themes: dracula, catppuccin-mocha, tokyo-night, nord, gruvbox-dark,
+// etc.  This file also defines `dracula-soft`, a dracula variant with much
+// subtler ribbons / frames so the tab bar + status bar don't dominate the UI.
+// ---------------------------------------------------------------------------
+// Design goals:
+//   * Keep ALL default keybindings intact so the on-screen "Shortcuts" panel
+//     (Ctrl-o then click "Shortcuts", or press ?) shows every shortcut.
+//   * Show the full UI: tab bar, status bar, pane frames, mode indicator.
+//   * Make every shortcut / point usable: mouse mode, system clipboard,
+//     sensible scrollback, nvim as scrollback editor.
+// ---------------------------------------------------------------------------
+
+// --- UI -------------------------------------------------------------------
+// simplified_ui=false keeps the tab bar, status bar and mode indicator
+// visible. This is what makes zellij "discoverable" out of the box.
+simplified_ui false
+
+// Draw borders around panes (helps visual navigation).
+pane_frames true
+
+// Cleaner pane frames: rounded corners and no auto-appended session name
+// (the status bar already shows the session on demand).
+ui {
+    pane_frames {
+        rounded_corners true
+        hide_session_name true
+    }
+}
+
+// --- Mouse ---------------------------------------------------------------
+// Enable mouse: click to focus, drag to resize pane borders, scroll wheel
+// to scroll the active pane's scrollback, double-click to select a word,
+// shift-drag / double-click-drag to extend selection.
+mouse_mode true
+
+// --- Theme ---------------------------------------------------------------
+// Pairs with the ghostty terminal: dracula / catppuccin-mocha / nord /
+// gruvbox-dark / tokyo-night / onedark / flexoki-dark / etc.
+// `dracula-soft` is defined further down in this file; swap to `dracula`
+// (or any other built-in) if you want the louder, high-contrast look.
+theme "dracula-soft"
+
+// --- Sessions ------------------------------------------------------------
+// When launched with no argument, attach to the most recent session or
+// create a new one based on the current working directory.
+autoconnect_sessions true
+attach_to_session true
+
+// When run inside another zellij session, mirror it (useful for SSH/remote
+// work). Set to false if you prefer isolated sessions.
+mirror_session true
+
+// --- Layout --------------------------------------------------------------
+// Layout launched when starting zellij with no argument.
+default_layout "default"
+
+// --- Scrollback ----------------------------------------------------------
+// Lines of history kept per pane.
+scroll_buffer_size 10000
+
+// Editor used when you press Ctrl-o e  (edit scrollback) or Enter in
+// search results. Falls back gracefully if the binary is missing.
+scrollback_editor "nvim"
+
+// --- Copy / Paste --------------------------------------------------------
+// Commands used by zellij to copy a selection. The first one that succeeds
+// wins. Covers Linux (Wayland/X11) and macOS.
+copy_command "wl-copy || pbcopy || xclip -selection clipboard || xsel --clipboard"
+
+// Choose the destination clipboard. "system" = Ctrl-C/Ctrl-V clipboard,
+// "primary" = X11/Wayland middle-click selection.
+copy_clipboard "system"
+
+// Auto-copy (and clear) of selection when releasing the mouse.
+copy_on_select true
+
+// --- Plugins -------------------------------------------------------------
+// Default UI plugins. Explicit here so the on-screen UI is consistent
+// across versions. Comment out to fall back to zellij's built-in defaults.
+plugins {
+    tab-bar    { path "tab-bar"; }
+    status-bar { path "status-bar"; }
+    strider    { path "strider"; }
+    compact-bar { path "compact-bar"; }
+}
+
+// --- Themes --------------------------------------------------------------
+// `dracula-soft` reuses dracula's palette but tones down the two bars and
+// pane frames that the stock theme renders with bright fills. Everything
+// else (session-manager, strider, about, search, etc.) inherits the same
+// dracula accents so it still looks coherent.
+//
+//   ribbon_unselected: was bright off-white fill -> dracula "current line"
+//                       gray (#44475a) with light text.
+//   ribbon_selected:   was bright green fill       -> dracula purple fill
+//                       (#bd93f9) so the active tab / mode ribbon is an
+//                       accent, not a billboard.
+//   text_unselected:   pure white on pure black    -> light text on dracula
+//                       background (#282a36) so it blends with the terminal.
+//   frame_selected:    bright green                -> dracula purple, so the
+//                       focused pane matches the active tab.
+//   frame_unselected:  added: dracula "comment" gray so unfocused frames
+//                       recede instead of disappearing.
+themes {
+    dracula-soft {
+        text_unselected {
+            base 248 248 242
+            background 40 42 54
+            emphasis_0 255 184 108
+            emphasis_1 139 233 253
+            emphasis_2 80 250 123
+            emphasis_3 255 121 198
+        }
+        text_selected {
+            base 248 248 242
+            background 68 71 90
+            emphasis_0 255 184 108
+            emphasis_1 139 233 253
+            emphasis_2 80 250 123
+            emphasis_3 255 121 198
+        }
+        ribbon_unselected {
+            base 248 248 242
+            background 68 71 90
+            emphasis_0 255 85 85
+            emphasis_1 248 248 242
+            emphasis_2 189 147 249
+            emphasis_3 255 121 198
+        }
+        ribbon_selected {
+            base 40 42 54
+            background 189 147 249
+            emphasis_0 255 85 85
+            emphasis_1 255 184 108
+            emphasis_2 255 121 198
+            emphasis_3 98 114 164
+        }
+        frame_unselected {
+            base 98 114 164
+            background 0
+            emphasis_0 0
+            emphasis_1 0
+            emphasis_2 0
+            emphasis_3 0
+        }
+        frame_selected {
+            base 189 147 249
+            background 0
+            emphasis_0 255 184 108
+            emphasis_1 139 233 253
+            emphasis_2 255 121 198
+            emphasis_3 0
+        }
+        frame_highlight {
+            base 255 184 108
+            background 0
+            emphasis_0 255 121 198
+            emphasis_1 255 184 108
+            emphasis_2 255 184 108
+            emphasis_3 255 184 108
+        }
+        table_title {
+            base 80 250 123
+            background 40 42 54
+            emphasis_0 255 184 108
+            emphasis_1 139 233 253
+            emphasis_2 80 250 123
+            emphasis_3 255 121 198
+        }
+        table_cell_selected {
+            base 248 248 242
+            background 68 71 90
+            emphasis_0 255 184 108
+            emphasis_1 139 233 253
+            emphasis_2 80 250 123
+            emphasis_3 255 121 198
+        }
+        table_cell_unselected {
+            base 248 248 242
+            background 40 42 54
+            emphasis_0 255 184 108
+            emphasis_1 139 233 253
+            emphasis_2 80 250 123
+            emphasis_3 255 121 198
+        }
+        list_selected {
+            base 248 248 242
+            background 68 71 90
+            emphasis_0 255 184 108
+            emphasis_1 139 233 253
+            emphasis_2 80 250 123
+            emphasis_3 255 121 198
+        }
+        list_unselected {
+            base 248 248 242
+            background 40 42 54
+            emphasis_0 255 184 108
+            emphasis_1 139 233 253
+            emphasis_2 80 250 123
+            emphasis_3 255 121 198
+        }
+        exit_code_success {
+            base 80 250 123
+            background 0
+            emphasis_0 139 233 253
+            emphasis_1 0 0 0
+            emphasis_2 255 121 198
+            emphasis_3 98 114 164
+        }
+        exit_code_error {
+            base 255 85 85
+            background 0
+            emphasis_0 241 250 140
+            emphasis_1 0
+            emphasis_2 0
+            emphasis_3 0
+        }
+        multiplayer_user_colors {
+            player_1 255 121 198
+            player_2 98 114 164
+            player_3 0
+            player_4 241 250 140
+            player_5 139 233 253
+            player_6 0
+            player_7 255 85 85
+            player_8 0
+            player_9 0
+            player_10 0
+        }
+    }
+}
+
+// --- Keybinds (additive to defaults) -------------------------------------
+// The full default keybinds stay active; entries below add or override.
+// See the in-app panel:  Ctrl-o  ->  click "Shortcuts".
+keybinds {
+    normal {
+        // Convenience: copy on Alt-c (already bound on some terminals,
+        // uncomment if you want it as an explicit key).
+        // bind "Alt c" { Copy; }
+    }
+}
