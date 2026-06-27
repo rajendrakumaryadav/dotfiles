@@ -1,0 +1,23 @@
+// ---------------------------------------------------------------------------
+// Clean layout: minimal bar, shortcuts only on demand.
+//
+// The top pane is the compact-bar, which shows session name, current mode
+// and tabs - but never the full keybind list. That keeps the bottom of the
+// screen quiet.
+//
+// When you enter a mode (Ctrl-p, Ctrl-t, Ctrl-n, Ctrl-h, Ctrl-s, Ctrl-o)
+// a tooltip pops up in the middle of the screen showing the most useful
+// shortcuts for that mode. Press Ctrl-a to toggle the tooltip manually.
+//
+// `tooltip "Ctrl a"` is passed as plugin configuration to compact-bar (it
+// is not one of Zellij's reserved plugin keys, so it is forwarded through
+// to the plugin's BTreeMap<String, String> configuration).
+// ---------------------------------------------------------------------------
+layout {
+    pane size=1 borderless=true {
+        plugin location="zellij:compact-bar" {
+            tooltip "Ctrl a"
+        }
+    }
+    pane
+}

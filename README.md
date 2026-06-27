@@ -27,7 +27,10 @@ dotfiles/
 ├── starship/
 │   └── .config/starship.toml
 ├── zellij/
-│   └── .config/zellij/config.kdl
+│   └── .config/zellij/
+│       ├── config.kdl
+│       └── layouts/
+│           └── clean.kdl
 ├── bin/
 │   └── pick              # sk-powered fuzzy finder / file picker
 ├── install.sh
@@ -241,9 +244,44 @@ Run `:Telescope keymaps` inside Neovim to browse every active keymap.
 
 ## Zellij (terminal multiplexer)
 
-Config lives in `zellij/.config/zellij/config.kdl`. All default keybindings are
-preserved, so the on-screen **Shortcuts panel** (`Ctrl-o` then click "Shortcuts",
-or press `?`) lists every binding. Highlights:
+Config lives in:
+
+- `zellij/.config/zellij/config.kdl` — main config (theme, mouse, clipboard,
+  scrollback, attach behavior, etc.)
+- `zellij/.config/zellij/layouts/clean.kdl` — the default layout. Uses
+  `compact-bar` (no always-visible keybind list) with a tooltip toggle.
+
+### Status bar
+
+The bottom-of-screen bar is intentionally **clean** — it shows only the
+session name, current mode and tabs. Keybindings are not always rendered.
+Instead, when you enter a mode (`Ctrl-p`, `Ctrl-t`, `Ctrl-n`, `Ctrl-h`,
+`Ctrl-s`, `Ctrl-o`) a **tooltip pops up in the middle of the screen**
+listing the most useful shortcuts for that mode. Press `Ctrl-a` to toggle
+the tooltip manually.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Zellij (my-session)  NORMAL    [ tab1 ][ tab2* ]   Ctrl a Tooltip │
+└─────────────────────────────────────────────────────────────┘
+
+   ┌──────────────── PANE ────────────────┐
+   │  ← ↓ ↑ →   move focus                │
+   │  n         new pane                  │
+   │  x         close pane                │
+   │  f         toggle fullscreen         │
+   │  w         toggle floating           │
+   └───────────────────────────────────────┘
+```
+
+This is driven by the compact-bar plugin being passed `tooltip "Ctrl a"`
+as configuration in `layouts/clean.kdl`. `tooltip` is not one of Zellij's
+reserved plugin keys, so it is forwarded to the plugin's
+`BTreeMap<String, String>` configuration.
+
+### Keybindings
+
+All default keybindings are preserved. Highlights:
 
 | Key | Mode | Action |
 | --- | --- | --- |
@@ -255,12 +293,16 @@ or press `?`) lists every binding. Highlights:
 | `Ctrl-h` | any | Enter Move mode (re-arrange panes) |
 | `Ctrl-g` | any | Lock session |
 | `Ctrl-q` | any | Quit zellij |
+| `Ctrl-a` | any | Toggle the shortcut tooltip (compact-bar) |
 | `Enter` / `Space` / `Esc` | inside any mode | Back to Normal |
 | `Alt + ←/→/↑/↓` | normal | Move focus across panes / tabs |
 | `Alt + n` | normal | New pane |
 | `Alt + =` / `Alt + -` | normal | Resize focused pane |
 | `Alt + p` | normal | Toggle pane-in-group |
 | `Alt + Shift + p` | normal | Toggle group marking |
+
+For the full keymap, open the in-app **Shortcuts panel** with `Ctrl-o`
+then click "Shortcuts", or press `?`.
 
 In-app panels (open with `Ctrl-o`):
 
@@ -269,7 +311,7 @@ In-app panels (open with `Ctrl-o`):
 - **Pane**     — split, close, fullscreen, float panes
 - **Plugin**   — manage UI plugins (tab-bar, status-bar, strider, compact-bar)
 - **Session**  — detach, quit, lock
-- **Shortcuts** — full keymap reference (this is your discoverability friend)
+- **Shortcuts** — full keymap reference
 - **About**    — version / diagnostic info
 
 Mouse mode is on by default: click to focus, drag pane borders to resize,
@@ -405,5 +447,5 @@ pgs
 - Uses NvChad v2.5 for Neovim
 - Ghostty theme with VT323 font
 - Starship with custom two-line prompt design
-- Zellij for terminal multiplexing (defaults kept so the in-app Shortcuts panel shows every keybind)
+- Zellij for terminal multiplexing — clean compact-bar with on-demand shortcut tooltips (`layouts/clean.kdl`)
 - `pick` for shell-level fuzzy finding (skim backend)
