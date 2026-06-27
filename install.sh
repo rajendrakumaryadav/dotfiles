@@ -22,7 +22,11 @@ PACKAGES=(
     "nvim:neovim:"
     "ghostty:ghostty:"
     "starship:starship:"
-    "ferrix:ferrix:manual"
+    "zellij:zellij:"
+    "sk:skim:"
+    "fd:fd-find:"
+    "bat:bat:"
+    "rg:ripgrep:"
 )
 
 detect_package_manager() {
@@ -156,6 +160,19 @@ for entry in "${PACKAGES[@]}"; do
     IFS=':' read -r tool package mode <<< "$entry"
     stow_package "$tool"
 done
+
+echo ""
+log "Applying post-install tweaks..."
+echo ""
+
+# On Debian / older Ubuntu the `fd-find` package installs the binary as
+# `fdfind`. Symlink it to `~/.local/bin/fd` so `pick` (and other tools)
+# can find it. $HOME/.local/bin is already on PATH via .bashrc.
+if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+    success "linked $(command -v fdfind) -> $HOME/.local/bin/fd"
+fi
 
 echo ""
 success "=== Done ==="

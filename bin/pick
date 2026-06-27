@@ -1,0 +1,342 @@
+#!/usr/bin/env bash
+# pick - telescope-like fuzzy finder + mac-style file picker (powered by skim)
+#
+# Usage: pick [SUBCOMMAND]
+#
+# Subcommands:
+#   (default)        mac-style file picker; opens the selected file in the
+#                    default app (xdg-open). Use Tab to cd into a folder.
+#   file, f          fuzzy-find files and open them in $EDITOR
+#   grep, g          live-grep across files; opens the match in $EDITOR
+#   dir, d, cd       fuzzy-find directories; cd into the result
+#   recent, r        recently modified files; opens in $EDITOR
+#   git, gs          modified / untracked files in the current git repo
+#   help, -h, --help show this help
+#
+# In-app keys (sk):
+#   Enter              accept (default action of the subcommand)
+#   Tab                cd into the selected directory (picker only)
+#   Alt+Enter          open in $EDITOR (picker only)
+#   Alt+O              open with xdg-open / open
+#   Alt+B              cd into the selected directory
+#   Ctrl+Y             copy the path to the clipboard
+#   Ctrl+/             toggle the preview pane
+#   Esc / Ctrl-C / Ctrl-Q   abort
+#
+# Dependencies:
+#   sk       (required)  the skim fuzzy finder binary
+#   fd       (optional)  speeds up file / dir discovery
+#   bat      (optional)  used for file preview
+#   rg       (optional)  used by `pick grep` for fast content search
+#   xdg-open or `open`   (optional) for the default-app opener
+#   wl-copy / xclip / xsel / pbcopy (optional) for clipboard
+set -euo pipefail
+
+# --- Helpers --------------------------------------------------------------
+
+die() { printf 'pick: %s\n' "$*" >&2; exit 1; }
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# clipboard command (single shell-safe token)
+clip_cmd() {
+  if   have wl-copy; then printf 'wl-copy'
+  elif have xclip;   then printf 'xclip -selection clipboard'
+  elif have xsel;    then printf 'xsel --clipboard'
+  elif have pbcopy;  then printf 'pbcopy'
+  else                    printf 'cat'
+  fi
+}
+
+# default-app opener command (single token)
+xdg_cmd() {
+  if   have xdg-open; then printf 'xdg-open'
+  elif have open;     then printf 'open'
+  else                     printf '%s' "${EDITOR:-nvim}"
+  fi
+}
+
+# editor command (single token)
+editor_cmd() { printf '%s' "${EDITOR:-nvim}"; }
+
+# open a file with the OS default app
+open_default() {
+  if   have xdg-open; then xdg-open "$1" >/dev/null 2>&1 &
+  elif have open;     then open "$1"     >/dev/null 2>&1 &
+  else                     ${EDITOR:-nvim} "$1"
+  fi
+}
+
+# open a file in the editor
+edit_file() {
+  ${EDITOR:-nvim} "$@"
+}
+
+# preview that works for both files and directories; used as sk --preview
+smart_preview() {
+  # args: <path>
+  if [ -d "$1" ]; then
+    if   have eza; then eza -la --color=always --group-directories-first -- "$1"
+    elif have exa; then exa -la --color=always --group-directories-first -- "$1"
+    else                ls -la  --color=always -- "$1"
+    fi
+  else
+    if have bat; then
+      bat --style=numbers --color=always --line-range=:200 -- "$1" 2>/dev/null \
+        || head -n 200 -- "$1"
+    else
+      head -n 200 -- "$1"
+    fi
+  fi
+}
+export -f smart_preview
+PREVIEW_CMD='bash -c "smart_preview \"\$1\"" _ {}'
+
+# fast file / dir discovery
+find_files() {
+  if have fd; then
+    fd --type f --hidden --follow --exclude .git --exclude node_modules \
+       --exclude .cache --exclude .npm --exclude .next --exclude target \
+       --exclude dist --exclude build --color=never -- . "$@"
+  else
+    find . -type f \
+      -not -path './.git/*' \
+      -not -path './node_modules/*' \
+      -not -path '*/target/*' \
+      -not -path '*/dist/*' \
+      -not -path '*/build/*' "$@"
+  fi
+}
+
+find_dirs() {
+  if have fd; then
+    fd --type d --hidden --follow --exclude .git --exclude node_modules \
+       --exclude .cache --exclude .npm --exclude .next --exclude target \
+       --exclude dist --exclude build --color=never -- . "$@"
+  else
+    find . -type d \
+      -not -path './.git*' \
+      -not -path './node_modules*' \
+      -not -path '*/target*' \
+      -not -path '*/dist*' \
+      -not -path '*/build*' "$@"
+  fi
+}
+
+# common sk args (kept in a single string for consistency)
+SK_COMMON='--ansi --reverse --height 80% --inline-info --no-sort'
+
+# --- Subcommands ----------------------------------------------------------
+
+# mac-style file picker
+cmd_picker() {
+  local sel
+  sel=$(
+    find_files . |
+    sk --prompt 'pick> ' \
+       $SK_COMMON \
+       --preview "$PREVIEW_CMD" \
+       --preview-window 'right:60%:wrap' \
+       --bind "tab:execute(cd -- {} && pwd)+abort" \
+       --bind "alt-b:execute(cd -- {} && pwd)+abort" \
+       --bind "alt-enter:become($(editor_cmd) {})" \
+       --bind "alt-o:execute($(xdg_cmd) {} >/dev/null 2>&1)+accept" \
+       --bind "ctrl-y:execute-silent(echo -n {} | $(clip_cmd))+abort" \
+       --bind 'ctrl-/:toggle-preview' \
+       --bind 'ctrl-space:toggle' \
+       --bind 'ctrl-q:abort' \
+       --header 'Tab/Alt-B: cd | Alt-Enter: editor | Alt-O: open | Ctrl-Y: copy | Ctrl-/: preview'
+  ) || return 0
+
+  if [ -n "$sel" ] && [ -e "$sel" ]; then
+    open_default "$sel"
+  fi
+}
+
+# fuzzy file finder -> editor
+cmd_file() {
+  local sel
+  sel=$(
+    find_files . |
+    sk --prompt 'file> ' \
+       $SK_COMMON \
+       --preview "$PREVIEW_CMD" \
+       --preview-window 'right:60%:wrap' \
+       --bind "alt-o:execute($(xdg_cmd) {} >/dev/null 2>&1)+accept" \
+       --bind "ctrl-y:execute-silent(echo -n {} | $(clip_cmd))+abort" \
+       --bind 'ctrl-/:toggle-preview' \
+       --bind 'ctrl-q:abort' \
+       --header 'Enter: edit | Alt-O: open | Ctrl-Y: copy | Ctrl-/: preview'
+  ) || return 0
+
+  if [ -n "$sel" ]; then
+    edit_file "$sel"
+  fi
+}
+
+# live grep -> editor at line
+cmd_grep() {
+  local pattern
+  pattern=$(
+    { printf '\n'; } |
+    sk --ansi --print-query --prompt 'pattern> ' --height 30% --no-sort
+  ) || return 0
+  pattern="${pattern%$'\n'}"
+  [ -z "$pattern" ] && return 0
+
+  local match
+  if have rg; then
+    # rg output: <file>:<line>:<content>  (--no-column to keep split simple)
+    match=$(
+      rg --color=always --line-number --no-heading --no-column --smart-case \
+         --glob '!node_modules' --glob '!.git' --glob '!target' \
+         --glob '!dist' --glob '!build' -- "$pattern" 2>/dev/null |
+      sk --ansi --prompt 'grep> ' \
+         --delimiter ':' --with-nth '1,2..' \
+         --preview 'bash -c "smart_preview \"\$1\"" _ {1}' \
+         --preview-window 'right:60%:wrap' \
+         --bind 'ctrl-/:toggle-preview' \
+         --bind 'ctrl-q:abort' \
+         --header 'Enter: open in $EDITOR at line | Ctrl-/: preview'
+    ) || return 0
+  else
+    match=$(
+      grep -RIn --color=always --exclude-dir=.git --exclude-dir=node_modules \
+                --exclude-dir=target --exclude-dir=dist --exclude-dir=build \
+                -- "$pattern" . 2>/dev/null |
+      sed 's|^\./||' |
+      sk --ansi --prompt 'grep> ' \
+         --delimiter ':' --with-nth '1,2..' \
+         --preview 'bash -c "smart_preview \"\$1\"" _ {1}' \
+         --preview-window 'right:60%:wrap' \
+         --bind 'ctrl-/:toggle-preview' \
+         --bind 'ctrl-q:abort' \
+         --header 'Enter: open in $EDITOR at line | Ctrl-/: preview'
+    ) || return 0
+  fi
+
+  if [ -n "$match" ]; then
+    local file line
+    file=$(printf '%s' "$match" | awk -F: '{
+      nf = split($0, p, ":")
+      f = ""
+      for (i = 1; i < nf - 1; i++) { if (i > 1) f = f ":"; f = f p[i] }
+      print f
+    }')
+    line=$(printf '%s' "$match" | awk -F: '{
+      nf = split($0, p, ":")
+      print p[nf-1]
+    }')
+    if [ -n "$file" ] && [ -e "$file" ]; then
+      edit_file "+${line:-1}" "$file"
+    fi
+  fi
+}
+
+# fuzzy directory finder -> cd
+cmd_dir() {
+  local sel
+  sel=$(
+    find_dirs . |
+    sk --prompt 'dir> ' \
+       $SK_COMMON \
+       --preview 'bash -c "smart_preview \"\$1\"" _ {}' \
+       --preview-window 'right:60%:wrap' \
+       --bind 'ctrl-/:toggle-preview' \
+       --bind 'ctrl-q:abort' \
+       --header 'Enter: cd | Ctrl-/: preview'
+  ) || return 0
+
+  if [ -n "$sel" ]; then
+    cd -- "$sel" && pwd
+  fi
+}
+
+# recently modified files
+cmd_recent() {
+  local sel
+  if have fd; then
+    sel=$(
+      fd --type f --hidden --exclude .git --color=never -- . |
+      xargs -I {} stat -c '%Y %n' -- {} 2>/dev/null |
+      sort -rn | head -200 | cut -d' ' -f2- |
+      sk --prompt 'recent> ' \
+         $SK_COMMON \
+         --preview "$PREVIEW_CMD" \
+         --preview-window 'right:60%:wrap' \
+         --bind "ctrl-y:execute-silent(echo -n {} | $(clip_cmd))+abort" \
+         --bind 'ctrl-/:toggle-preview' \
+         --bind 'ctrl-q:abort' \
+         --header 'Enter: edit | Ctrl-Y: copy | Ctrl-/: preview'
+    ) || return 0
+  else
+    sel=$(
+      find . -type f -not -path './.git/*' -printf '%T@ %p\n' 2>/dev/null |
+      sort -rn | head -200 | cut -d' ' -f2- |
+      sk --prompt 'recent> ' \
+         $SK_COMMON \
+         --preview "$PREVIEW_CMD" \
+         --preview-window 'right:60%:wrap' \
+         --bind "ctrl-y:execute-silent(echo -n {} | $(clip_cmd))+abort" \
+         --bind 'ctrl-/:toggle-preview' \
+         --bind 'ctrl-q:abort' \
+         --header 'Enter: edit | Ctrl-Y: copy | Ctrl-/: preview'
+    ) || return 0
+  fi
+
+  if [ -n "$sel" ]; then
+    edit_file "$sel"
+  fi
+}
+
+# git status files
+cmd_git() {
+  if ! have git; then die "git not found"; fi
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    die "not inside a git repository"
+  fi
+
+  local sel
+  sel=$(
+    git status --porcelain |
+    awk '{print $2}' |
+    sk --prompt 'git> ' \
+       $SK_COMMON \
+       --preview "$PREVIEW_CMD" \
+       --preview-window 'right:60%:wrap' \
+       --bind "ctrl-y:execute-silent(echo -n {} | $(clip_cmd))+abort" \
+       --bind 'ctrl-/:toggle-preview' \
+       --bind 'ctrl-q:abort' \
+       --header 'Enter: edit | Ctrl-Y: copy | Ctrl-/: preview'
+  ) || return 0
+
+  if [ -n "$sel" ]; then
+    edit_file "$sel"
+  fi
+}
+
+# --- Help ----------------------------------------------------------------
+
+show_help() {
+  sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+# --- Entry ----------------------------------------------------------------
+
+if ! have sk; then
+  die "skim (sk) is not installed. Install it with your package manager (e.g. 'sudo apt install skim' or 'brew install sk')"
+fi
+
+sub="${1:-picker}"
+shift 2>/dev/null || true
+
+case "$sub" in
+  picker|"")     cmd_picker "$@" ;;
+  file|f)        cmd_file "$@" ;;
+  grep|g)        cmd_grep "$@" ;;
+  dir|d|cd)      cmd_dir "$@" ;;
+  recent|r)      cmd_recent "$@" ;;
+  git|gs)        cmd_git "$@" ;;
+  help|-h|--help) show_help ;;
+  *) die "unknown subcommand: $sub (try 'pick help')" ;;
+esac

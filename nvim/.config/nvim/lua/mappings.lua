@@ -48,7 +48,7 @@ map("n", "<leader>d", "yyP", { desc = "Duplicate line" })
 
 -- Format buffer (conform.nvim)
 map("n", "<leader>lf", function()
-  require("conform").format({ async = true, lsp_fallback = true })
+    require("conform").format({ async = true, lsp_fallback = true })
 end, { desc = "Format buffer" })
 
 -- Search navigation (centered)
