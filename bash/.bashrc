@@ -145,14 +145,14 @@ fi
 #   * TMUX is set (we are inside tmux)
 #   * The shell is not interactive (no PS1) or has no TTY
 #   * zellij is not on PATH
-if [ "${ZELLIJ_AUTO:-1}" = "1" ] \
-   && [ -z "${ZELLIJ:-}" ] \
-   && [ -z "${TMUX:-}" ] \
-   && [ -n "${PS1:-}" ] \
-   && [ -t 0 ] && [ -t 1 ] \
-   && command -v zellij >/dev/null 2>&1; then
-    exec zellij
-fi
+# if [ "${ZELLIJ_AUTO:-1}" = "1" ] \
+#    && [ -z "${ZELLIJ:-}" ] \
+#    && [ -z "${TMUX:-}" ] \
+#    && [ -n "${PS1:-}" ] \
+#    && [ -t 0 ] && [ -t 1 ] \
+#    && command -v zellij >/dev/null 2>&1; then
+#     exec zellij
+# fi
 
 
 # opencode
@@ -168,8 +168,10 @@ export ZELLIJ_CONFIG_FILE=${HOME}/.config/zellij/config.kdl
 eval "$(starship init bash)"
 
 
-# zig language
-export PATH=${PATH}:${HOME}/.local/software/zig-v0.15.2
+if [ -f  ~/.bash_secret ]; then
+  . ~/.bash_secret
+
+fi
 
 
 # Rust tools
@@ -194,3 +196,38 @@ export GPG_TTY=$(tty)
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+source '/home/rajendrayadav/.bash_completions/app_generator.sh'
+
+# ZVM
+export ZVM_INSTALL="$HOME/.zvm/self"
+export PATH="$PATH:$HOME/.zvm/bin"
+export PATH="$PATH:$ZVM_INSTALL/"
+
+
+# AWS ministack
+
+complete -C "$(which aws_completer)" aws
+
+# ministack setup
+export AWS_ENDPOINT_URL=http://localhost:4566
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
+# Google AWS_ACCESS_KEY_ID
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# JAVA_HOME
+export JAVA_HOME=/usr/lib/jvm/jdk-21.0.12-oracle-x64
+export PATH=${JAVA_HOME}/bin:${PATH}
+
+# Load Angular CLI autocompletion.
+source <(ng completion script)
+. "/home/rajendrayadav/.deno/env"
+source /home/rajendrayadav/.local/share/bash-completion/completions/deno.bash
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/rajendrayadav/.local/bin:$PATH"

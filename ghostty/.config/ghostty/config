@@ -5,7 +5,7 @@ font-family-bold = VT323
 
 cursor-style = bar
 window-theme = ghostty
-background-opacity = 0.90
+background-opacity = 0.98
 background-blur = true
 
 window-decoration = auto
@@ -21,3 +21,6 @@ macos-titlebar-style=transparent
 # Padding
 window-padding-x = 12
 window-padding-y = 12
+
+# Theme
+theme = 0x96f
