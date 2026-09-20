@@ -83,13 +83,113 @@ is_installed() {
     command -v "$1" &>/dev/null
 }
 
+# Node's binary is `node` on most distros but `nodejs` on some (apt). Check both.
+is_node_installed() {
+    is_installed node || is_installed nodejs
+}
+
+# Neovim prerequisites that are NOT dotfiles-packages (no stow dir):
+#   distro packages + tree-sitter-cli + uv (python toolchain manager).
+NVIM_TOOLS=(
+    "node:nodejs:auto"     # npm-based LSP servers (pyright, ts_ls, prettier...)
+    "npm:npm:auto"
+    "python3:python3:auto" # pip-based mason tools (black, isort, mypy...)
+)
+
+ensure_tree_sitter() {
+    if is_installed tree-sitter; then
+        success "tree-sitter is already installed ($(tree-sitter --version))"
+        return 0
+    fi
+
+    log "tree-sitter not found (required by nvim-treesitter)."
+
+    # Try the distro package first.
+    if install_package tree-sitter-cli; then
+        success "tree-sitter installed via package manager"
+        return 0
+    fi
+
+    # Fallback: build with cargo.
+    if command -v cargo &>/dev/null; then
+        warn "Installing tree-sitter-cli via cargo (this may take a few minutes)..."
+        if cargo install tree-sitter-cli --locked; then
+            success "tree-sitter installed via cargo (~/.cargo/bin)"
+            return 0
+        fi
+    fi
+
+    # Last fallback: npm (requires the postinstall script to be allowed).
+    if command -v npm &>/dev/null; then
+        warn "Installing tree-sitter-cli via npm..."
+        if npm install -g --allow-scripts tree-sitter-cli; then
+            success "tree-sitter installed via npm"
+            return 0
+        fi
+    fi
+
+    warn "Could not install tree-sitter automatically."
+    warn "Install it manually:  https://tree-sitter.github.io/tree-sitter/creating-parsers#installation"
+    warn "(e.g. cargo install tree-sitter-cli --locked)"
+}
+
+ensure_uv() {
+    if is_installed uv; then
+        success "uv is already installed ($(uv --version))"
+        return 0
+    fi
+
+    log "uv not found, installing official installer..."
+    if curl -LsSf https://astral.sh/uv/install.sh | sh; then
+        export PATH="$HOME/.local/bin:$PATH"
+        success "uv installed (uv --version)"
+    else
+        warn "Failed to install uv. See https://docs.astral.sh/uv/getting-started/installation"
+    fi
+}
+
+# Python dev tools managed by uv:
+#   ruff        = fast linter + formatter
+#   black/isort = formatters used by conform.nvim for python
+#   mypy        = type checker
+# Entry format: binary:uv-package
+UV_TOOLS=(
+    "ruff:ruff"
+    "mypy:mypy"
+    "black:black"
+    "isort:isort"
+)
+
+ensure_uv_tools() {
+    if ! is_installed uv; then
+        warn "Skipping uv-managed tools (uv not installed)."
+        return 0
+    fi
+
+    local tool package
+    for entry in "${UV_TOOLS[@]}"; do
+        tool="${entry%%:*}"
+        package="${entry##*:}"
+        if is_installed "$tool"; then
+            success "$tool is already installed"
+        else
+            log "Installing $tool via uv..."
+            if uv tool install "$package"; then
+                success "$tool installed via uv"
+            else
+                warn "Failed to install $tool. Try: uv tool install $package"
+            fi
+        fi
+    done
+}
+
 check_and_install() {
     local tool="$1"
     local package="$2"
     local mode="${3:-auto}"
 
     if [ "$mode" = "manual" ]; then
-        if is_installed "$tool"; then
+        if is_installed "$tool" || { [ "$tool" = "node" ] && is_node_installed; }; then
             success "$tool is already installed"
         else
             warn "$tool not found. Please install it manually."
@@ -97,7 +197,7 @@ check_and_install() {
         return 0
     fi
 
-    if is_installed "$tool"; then
+    if is_installed "$tool" || { [ "$tool" = "node" ] && is_node_installed; }; then
         success "$tool is already installed"
     else
         warn "$tool not found, attempting to install $package..."
@@ -151,6 +251,23 @@ for entry in "${PACKAGES[@]}"; do
     IFS=':' read -r tool package mode <<< "$entry"
     check_and_install "$tool" "$package" "$mode"
 done
+
+echo ""
+log "Checking Neovim tooling..."
+echo ""
+
+for entry in "${NVIM_TOOLS[@]}"; do
+    IFS=':' read -r tool package mode <<< "$entry"
+    check_and_install "$tool" "$package" "$mode"
+done
+
+ensure_tree_sitter
+ensure_uv
+ensure_uv_tools
+
+warn "Go is optional for nvim (needed only for gopls/goimports/gofumpt)."
+warn "If missing, those Mason packages will simply fail to install - that's fine."
+echo ""
 
 echo ""
 log "Stowing dotfiles..."

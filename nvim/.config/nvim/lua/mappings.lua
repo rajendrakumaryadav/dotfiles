@@ -10,14 +10,9 @@ map("i", "kj", "<ESC>", { desc = "Escape insert mode" })
 -- Save / Quit
 map("n", "<leader>w", ":w<CR>", { desc = "Save" })
 map("n", "<leader>q", ":q<CR>", { desc = "Quit" })
-map("n", "<leader>x", ":x<CR>", { desc = "Save and quit" })
-map("n", "<leader>/", ":nohlsearch<CR>", { desc = "Clear search highlights" })
-
--- Window navigation
-map("n", "<C-h>", "<C-w>h", { desc = "Go to left window" })
-map("n", "<C-j>", "<C-w>j", { desc = "Go to down window" })
-map("n", "<C-k>", "<C-w>k", { desc = "Go to up window" })
-map("n", "<C-l>", "<C-w>l", { desc = "Go to right window" })
+map("n", "<leader>Q", "<cmd>wqa<CR>", { desc = "Save all and quit" })
+map("n", "<leader>u", ":nohlsearch<CR>", { desc = "Clear search highlights" })
+map("n", "<C-s>", "<cmd>w<CR>", { desc = "Save file" })
 
 -- Window split management
 map("n", "<leader>sv", "<C-w>v", { desc = "Split window vertically" })
@@ -25,8 +20,10 @@ map("n", "<leader>sh", "<C-w>s", { desc = "Split window horizontally" })
 map("n", "<leader>se", "<C-w>=", { desc = "Make splits equal size" })
 map("n", "<leader>sx", "<C-w>c", { desc = "Close current split" })
 
--- File explorer (override NvChad default so <leader>e toggles instead of only focusing)
-map("n", "<leader>e", "<cmd>NvimTreeToggle<CR>", { desc = "Toggle file explorer" })
+-- File explorer (toggle instead of NvChad default focus)
+map("n", "<leader>e", function()
+  require("nvim-tree.api").tree.toggle()
+end, { desc = "Toggle file explorer" })
 map("n", "<C-n>", "<cmd>NvimTreeToggle<CR>", { desc = "Toggle file explorer" })
 
 -- Buffer management
@@ -43,17 +40,27 @@ map("n", "<leader>Y", '"+Y', { desc = "Yank line to system clipboard" })
 map("v", "J", ":m '>+1<CR>gv=gv", { desc = "Move selected lines down" })
 map("v", "K", ":m '<-2<CR>gv=gv", { desc = "Move selected lines up" })
 
--- Duplicate line
+-- Duplicate / delete line
 map("n", "<leader>d", "yyP", { desc = "Duplicate line" })
+map("n", "<leader>dd", '"_dd', { desc = "Delete line without yanking" })
 
 -- Format buffer (conform.nvim)
 map("n", "<leader>lf", function()
-    require("conform").format({ async = true, lsp_fallback = true })
+  require("conform").format({ async = true, lsp_fallback = true })
 end, { desc = "Format buffer" })
 
 -- Search navigation (centered)
 map("n", "n", "nzzzv", { desc = "Next search result centered" })
 map("n", "N", "Nzzzv", { desc = "Prev search result centered" })
 
+-- Better habits
+map("n", "Y", "y$", { desc = "Yank to end of line" })
+map("n", "Q", "<cmd>qa<CR>", { desc = "Quit all" })
+
 -- Terminal
 map("t", "<Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
+
+-- Diagnostics
+map("n", "[d", vim.diagnostic.goto_prev, { desc = "Go to previous diagnostic" })
+map("n", "]d", vim.diagnostic.goto_next, { desc = "Go to next diagnostic" })
+map("n", "<leader>de", vim.diagnostic.open_float, { desc = "Show diagnostic in float" })

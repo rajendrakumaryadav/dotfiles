@@ -99,27 +99,47 @@ stow -v -t ~ nvim
 
 ## Neovim (nvim)
 
-NvChad v2.5 based configuration. Leader key is **`<Space>`** and local leader is also **`<Space>`**.
+NvChad v2.5 based configuration ([nvchad.com](https://nvchad.com)).
+Leader key is **`<Space>`** and local leader is also **`<Space>`**.
 
-Plugins installed via `lazy.nvim`:
-- **NvChad** - base UI (statusline, base46 themes, terminal, etc.)
-- **nvim-lspconfig** - LSP support for `lua_ls`, `pyright`, `ts_ls`, `html`, `cssls`, `gopls`, `rust_analyzer`, `zls`
-- **conform.nvim** - formatter (stylua for Lua, rustfmt for Rust, zig fmt for Zig)
-- **nvim-treesitter** - syntax highlighting for vim/lua/vimdoc/html/css/rust/zig
+Plugins installed via `lazy.nvim` + NvChad core:
+- **NvChad** - base UI (base46 themes, statusline, tabufline, nvdash, terminal)
+- **nvim-lspconfig** + **mason.nvim** - LSP, linters & formatters
+- **conform.nvim** - formatting on save
+- **nvim-treesitter** - syntax highlighting (parsers auto-configurable via `:TSInstallAll`)
+- **Comment.nvim** - `gcc` / `gbc` toggling
+- **nvim-surround** - `ys` / `cs` / `ds` surround editing
+- **nvim-ts-autotag** - auto-close HTML/XML/JSX tags
+- **todo-comments.nvim** - highlight & jump TODO/FIXME/HACK
+- **zen-mode.nvim** - distraction-free writing
+- NvChad defaults: Telescope, NvimTree, nvim-cmp, gitsigns, which-key...
 
 Config files:
+- `lua/chadrc.lua` - NvChad UI / theme / nvdash / mason packages (`:MasonInstallAll`)
 - `lua/mappings.lua` - custom keymaps
 - `lua/options.lua` - editor options
 - `lua/autocmds.lua` - autocommands
-- `lua/chadrc.lua` - NvChad UI tweaks
+- `lua/compat.lua` - polyfill for `vim.list.unique` (Neovim < 0.12)
 - `lua/configs/lazy.lua` - lazy.nvim setup
 - `lua/configs/lspconfig.lua` - LSP servers
 - `lua/configs/conform.lua` - formatters
-- `lua/plugins/init.lua` - plugin specs
+- `lua/plugins/init.lua` - conform / lspconfig overrides
+- `lua/plugins/essentials.lua` - extra plugins
+- `lua/plugins/treesitter.lua` - installed parsers
+
+### Post-install (one time)
+
+1. Boot `nvim`, wait for `lazy.nvim` to install plugins.
+2. Save & reopen, then run:
+   - `:MasonInstallAll` - installs LSP servers / formatters / linters
+   - `:TSInstallAll` - installs tree-sitter parsers
+
+    (needs `tree-sitter-cli` on your PATH, see `install.sh`)
 
 ### Custom Keymaps
 
-Defined in `nvim/.config/nvim/lua/mappings.lua`. Many more (LSP, Telescope, NvimTree, terminal, etc.) are inherited from NvChad defaults.
+Defined in `nvim/.config/nvim/lua/mappings.lua`. Many more (LSP, Telescope,
+NvimTree, terminal, etc.) are inherited from NvChad defaults.
 
 #### Basics
 
@@ -132,24 +152,17 @@ Defined in `nvim/.config/nvim/lua/mappings.lua`. Many more (LSP, Telescope, Nvim
 
 | Key | Action |
 | --- | --- |
-| `<leader>w` | Save file |
+| `<leader>w` / `<C-s>` | Save file |
 | `<leader>q` | Quit |
-| `<leader>x` | Save and quit |
-| `<leader>/` | Clear search highlights |
+| `<leader>x` | Close current buffer (NvChad default) |
+| `<leader>u` | Clear search highlights |
+| `<leader>Q` / `Q` | Save all and quit |
 
-#### Window Navigation
-
-| Key | Action |
-| --- | --- |
-| `<C-h>` | Move to left window |
-| `<C-j>` | Move to lower window |
-| `<C-k>` | Move to upper window |
-| `<C-l>` | Move to right window |
-
-#### Split Management
+#### Window & Splits
 
 | Key | Action |
 | --- | --- |
+| `<C-h>` / `<C-j>` / `<C-k>` / `<C-l>` | Move between windows |
 | `<leader>sv` | Split window vertically |
 | `<leader>sh` | Split window horizontally |
 | `<leader>se` | Make all splits equal size |
@@ -171,29 +184,49 @@ Defined in `nvim/.config/nvim/lua/mappings.lua`. Many more (LSP, Telescope, Nvim
 | `<leader>bd` | Close buffer |
 | `<leader>bD` | Force close buffer |
 
-#### Clipboard / Text Manipulation
+#### Text Manipulation
 
 | Key | Mode | Action |
 | --- | --- | --- |
 | `<leader>y` | Normal, Visual | Yank selection to system clipboard |
 | `<leader>Y` | Normal | Yank entire line to system clipboard |
+| `Y` | Normal | Yank to end of line |
 | `<leader>d` | Normal | Duplicate current line |
-| `J` | Visual | Move selected lines down |
-| `K` | Visual | Move selected lines up |
+| `<leader>dd` | Normal | Delete line without yanking |
+| `J` / `K` | Visual | Move selected lines up / down |
+| `ys` / `cs` / `ds` | Normal | Add / change / delete surround (nvim-surround) |
+| `gcc` | Normal | Toggle line comment (Comment.nvim) |
+| `gc` | Visual | Toggle comment on selection |
 
-#### LSP / Formatting
+#### Formatting (conform.nvim, runs on save)
 
 | Key | Action |
 | --- | --- |
-| `<leader>lf` | Format buffer (conform.nvim) |
+| `<leader>lf` / `<leader>fm` | Format buffer / file |
+
+#### LSP (extended on top of NvChad defaults)
+
+| Key | Action |
+| --- | --- |
+| `gd` | Go to definition |
+| `gr` | Go to references |
+| `K` | Hover documentation |
+| `<leader>ca` | Code action |
+| `<leader>rn` | Rename symbol |
+| `<leader>ra` | Rename symbol in range (NvRenamer) |
+| `[d` / `]d` | Previous / next diagnostic |
+| `<leader>de` | Show diagnostic in float |
+
+#### Extra
+
+| Key | Action |
+| --- | --- |
+| `<leader>ft` | Find TODO/FIXME comments (todo-comments) |
+| `<leader>uz` | Toggle Zen mode |
+| `<leader>t` `h` | Switch theme (NvChad theme picker) |
+| `<A-i>` / `<A-h>` / `<A-v>` | Toggle float / horizontal / vertical terminal |
 
 Search navigation (`n` / `N`) keeps the cursor vertically centered.
-
-#### Terminal
-
-| Key | Mode | Action |
-| --- | --- | --- |
-| `<Esc>` | Terminal | Return to Normal mode |
 
 ### Inherited NvChad Keymaps (default)
 
@@ -205,40 +238,34 @@ For convenience, the most useful built-ins are:
 | `<leader>fw` | Live grep (Telescope) |
 | `<leader>fb` | List buffers (Telescope) |
 | `<leader>fh` | Search help tags |
-| `<leader>tt` | Toggle terminal |
-| `<leader>th` | Toggle horizontal terminal |
-| `<leader>ca` | Code action (LSP) |
-| `<leader>rn` | Rename symbol (LSP) |
-| `gd` | Go to definition (LSP) |
-| `gr` | Go to references (LSP) |
-| `K` | Hover documentation (LSP) |
-| `gcc` | Toggle line comment |
+| `<leader>fo` | Recent files (Telescope) |
+| `<leader>th` | Switch theme |
+| `<leader>ch` | NvCheatsheet (all keymaps) |
 
 ### Language Support
 
-| Language | LSP Server | Formatter | Tree-sitter |
+`install.sh` sets up `nodejs`, `npm`, `python3`, `tree-sitter-cli`, `uv`
+(+ `ruff`, `mypy`, `black`, `isort`). LSP servers, formatters and linters are
+installed by Mason (`:MasonInstallAll`):
+
+| Language | LSP Server | Formatter | Linter |
 | --- | --- | --- | --- |
-| Lua | `lua_ls` | `stylua` | yes |
-| Python | `pyright` | - | - |
-| TypeScript / JS | `ts_ls` | - | - |
-| HTML | `html` | - | yes |
-| CSS | `cssls` | - | yes |
-| Go | `gopls` | - | - |
-| Rust | `rust_analyzer` (clippy on save) | `rustfmt` | yes |
-| Zig | `zls` | `zig fmt` | yes |
+| Lua | `lua_ls` | `stylua` | - |
+| Python | `pyright` | `black` + `isort` | `ruff`, `mypy` |
+| TypeScript / JS | `ts_ls` | `prettier` / `prettierd` | `eslint_d` |
+| HTML | `html-lsp` | `prettierd` | - |
+| CSS / SCSS / LESS | `css-lsp` | `prettierd` | - |
+| JSON / YAML | `json-lsp` / `yamlls` | `prettierd` / `yamlfmt` | - |
+| Bash / Shell | `bashls` | `shfmt` | `shellcheck` |
+| Markdown | `marksman` | `prettierd` | `markdownlint` |
+| Docker | `dockerls` + compose | - | `hadolint` |
+| Rust | `rust_analyzer` (clippy) | `rustfmt` | - |
+| Go *(optional)* | `gopls` | `gofmt` / `gofumpt` | - |
+| Zig | `zls` | `zigfmt` | - |
 
-#### Tool Requirements
-
-The LSP servers and formatters must be installed separately on your system
-(the editor will not install them):
-
-- **Lua**: `stylua`
-- **Python**: `pyright`
-- **TypeScript / JS**: `typescript-language-server` (`npm i -g typescript-language-server`)
-- **HTML / CSS**: `vscode-langservers-extracted` (`npm i -g vscode-langservers-extracted`)
-- **Go**: `gopls` (`go install golang.org/x/tools/gopls@latest`)
-- **Rust**: `rust-analyzer` (via `rustup component add rust-analyzer`), `rustfmt`, `clippy`
-- **Zig**: `zls` (https://github.com/zigtools/zls), `zig` (ships `zig fmt`)
+> Note: Go-based packages (`gopls`, `goimports`, `gofumpt`) and pip-based ones
+> (`black`, `isort`, `mypy`) need `go` / `pip` on your system — Mason skips
+> them otherwise without breaking anything. `uv` provides the formatter tools.
 
 Run `:Telescope keymaps` inside Neovim to browse every active keymap.
 
