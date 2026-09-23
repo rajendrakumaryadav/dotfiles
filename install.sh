@@ -149,15 +149,12 @@ ensure_uv() {
 }
 
 # Python dev tools managed by uv:
-#   ruff        = fast linter + formatter
-#   black/isort = formatters used by conform.nvim for python
-#   mypy        = type checker
+#   ruff = fast linter + formatter (replaces black/isort)
+#   ty   = fast type checker (replaces mypy/pyright)
 # Entry format: binary:uv-package
 UV_TOOLS=(
     "ruff:ruff"
-    "mypy:mypy"
-    "black:black"
-    "isort:isort"
+    "ty:ty"
 )
 
 ensure_uv_tools() {

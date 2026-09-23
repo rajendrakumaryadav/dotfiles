@@ -19,7 +19,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 local servers = {
     "lua_ls",
-    "pyright",
+    "ruff", -- linter+formatter (astral, replaces isort/black via LSP)
+    "ty", -- type checker (astral, replaces pyright/mypy)
     "ts_ls",
     "html",
     "cssls",
@@ -42,16 +43,18 @@ vim.lsp.config("lua_ls", {
     },
 })
 
-vim.lsp.config("pyright", {
-    settings = {
-        python = {
-            analysis = {
-                autoSearchPaths = true,
-                typeCheckingMode = "basic",
-                useLibraryCodeForTypes = true,
-            },
-        },
-    },
+-- ruff via uv: `uv run ruff server` works even without global ruff, ruff already via `uv tool install ruff`
+vim.lsp.config("ruff", {
+    cmd = { "ruff", "server" },
+    -- to force uv: uncomment next line
+    -- cmd = { "uv", "run", "ruff", "server" },
+})
+
+-- ty via uv: `ty server` (installed via `uv tool install ty`)
+vim.lsp.config("ty", {
+    cmd = { "ty", "server" },
+    -- to force uv: uncomment next line
+    -- cmd = { "uv", "run", "ty", "server" },
 })
 
 vim.lsp.config("rust_analyzer", {

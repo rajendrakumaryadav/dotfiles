@@ -95,11 +95,13 @@ M.cheatsheet = {
 }
 
 -- packages installed by :MasonInstallAll (LSP servers, linters, formatters)
+-- python: ruff (format+lint) + ty (type check) via uv — replaces black/isort/mypy/pyright
 M.mason = {
     pkgs = {
         -- lsp servers
         "lua-language-server",
-        "pyright",
+        "ruff",
+        "ty",
         "typescript-language-server",
         "html-lsp",
         "css-lsp",
@@ -113,10 +115,8 @@ M.mason = {
         "dockerfile-language-server",
         "docker-compose-language-service",
 
-        -- formatters
+        -- formatters (conform.nvim: ruff via `uv tool install ruff`)
         "stylua",
-        "black",
-        "isort",
         "prettierd",
         "shfmt",
         "goimports",
@@ -125,7 +125,6 @@ M.mason = {
 
         -- linters
         "eslint_d",
-        "mypy",
         "shellcheck",
         "markdownlint",
         "hadolint",
