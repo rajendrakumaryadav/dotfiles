@@ -1,5 +1,16 @@
 require("nvchad.configs.lspconfig").defaults()
 
+-- Override capabilities with blink.cmp if available (better completionItem support)
+-- NvChad defaults already set vim.lsp.config("*") with its caps; blink extends them
+do
+  local ok, blink = pcall(require, "blink.cmp")
+  if ok then
+    local caps = blink.get_lsp_capabilities(vim.lsp.protocol.make_client_capabilities(), true)
+    -- keep NvChad's extra completionItem fields (snippetSupport etc.) merged
+    vim.lsp.config("*", { capabilities = caps })
+  end
+end
+
 -- Extra LSP keymaps on top of NvChad defaults (gd, gD, <leader>ra, etc.)
 local map = vim.keymap.set
 
